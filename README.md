@@ -4,6 +4,7 @@ Custom Molotov grenade in Counter Strike 1.6 for AMX Mod X
 Main theme —  [dev-cs.ru](https://dev-cs.ru/resources/1160/ "[GRENADE] Molotov")
 
 **Требования:**
+
 `ReGameDLL 5.14.0.453` или выше
 `ReAPI`
 Модифицированный `delta.lst` (измененный body с 8 бит на 32 бита - `DEFINE_DELTA( body, DT_INTEGER, 32, 1.0 )`)
@@ -148,7 +149,6 @@ molotov_smoke_owner "models/w_smokegrenade.mdl"
 `steelzzz`
 
 
-```c
 `Добавлено:`
 
 Конфигурация.
@@ -173,10 +173,9 @@ molotov_smoke_owner "models/w_smokegrenade.mdl"
 После горения на земле остаются следы *декали.
 Частичная поддержка Health Nade. *Жертвуем оружием WEAPON_TMP 
 ![HUD](images/hud.jpg)
-```
 
 ```c
-`Нужно исправить:`
+Нужно исправить:
 
 ? Правильную работу с конфигом, чтению кваров 
 ? создание частиц в данный момент количество создается некорректно — (molotov_effect_mode & molotov_effect_num)
@@ -186,14 +185,14 @@ molotov_smoke_owner "models/w_smokegrenade.mdl"
 ```
 
 ```c
-kekw `В последних идеях было:`
+kekw В последних идеях было:
 
 Разгорание по большей площади со временем
 Нанесение урона в зависимости от наличия армора, а так же времени пребывания в радиусе горения.
 Более лучшая визуализация эффектов чем сейчас [улучшить тайминги\плавности - появления\затухания, разброс частиц по осям, их размер, кучность, детализация, фреимрейт....]
 ```
 
-```c
+
 `Заметки:`
 
 ```c
@@ -230,6 +229,4 @@ public FireMolotov_Think_Post(iEntity)
 
     set_entvar(iEntity, var_nextthink, get_gametime() + 0.025);
 }
-```
-
 ```
