@@ -8,6 +8,7 @@ Custom Molotov grenade in Counter Strike 1.6 for AMX Mod X
 - Модифицированный `delta.lst` (измененный body с 8 бит на 32 бита - `DEFINE_DELTA( body, DT_INTEGER, 32, 1.0 )`)
 
 ### Main theme —  [dev-cs.ru](https://dev-cs.ru/resources/1160/ "[GRENADE] Molotov")
+### [Preview Video] (https://youtu.be/c_ukD-klXqg)
 
 ___
 **Автоматическое создание конфигурационного файла /addons/amxmodx/configs/plugins/plugin-grenade_molotov.cfg**
@@ -173,60 +174,3 @@ ___
 - После горения на земле остаются следы *декали.
 - Частичная поддержка Health Nade. *Жертвуем оружием WEAPON_TMP 
   - ![HUD](images/hud.jpg)
-___
-```c
-Нужно исправить:
-
-? Правильную работу с конфигом, чтению кваров 
-? создание частиц в данный момент количество создается некорректно — (molotov_effect_mode & molotov_effect_num)
-? поправить muzzflash фитиля
-? в общем требуется рефакторинг кода :) :(
-? еще что-то
-```
-
-```c
-kekw В последних идеях было:
-
-Разгорание по большей площади со временем
-Нанесение урона в зависимости от наличия армора, а так же времени пребывания в радиусе горения.
-Более лучшая визуализация эффектов чем сейчас [улучшить тайминги\плавности - появления\затухания, разброс частиц по осям, их размер, кучность, детализация, фреимрейт....]
-```
-___
-
-###Заметки:
-
-```c
-человек пожаловался на то что при включённой функции molotov_smoke_touch (Тушить ли коктейль молотова дымовой гранатой) сервер через некоторое время уходит в повышенное потребление CPU вплоть до 99% при долгой игре на карте. Прямо указал что без этой функции всё нормально. Однако код модифицирован (не оригинал). В изначальном (твоём) варианте я вижу тип энтити CLASSNAME_SMOKE_TOUCHER который создаётся при условии что включён вышеупомянутый квар.
-
-При этом в коде данный тип энтити не удаляется, ему через # времени анрегается touch (CleanUpMap или в хуке touch). Это точно нормальное поведение? Мне кажется эту энтити нужно удалять путём установки ей nextthink и SetThink(). Особо я не разбирался, мы внесли удаление как раз этим способом + в CleanUpMap вместо анрега touch() добавили удаление. Пока смотрим, вроде проблема с CPU ушла.
-```
-
-```c
-public FireMolotov_Think_Post(iEntity)
-{
-    if (is_nullent(iEntity)) return;
-
-    if (FClassnameIs(iEntity, EFFECT_CLASSNAME_MUZZLEFLASH)) {
-        static iOwner; iOwner = get_entvar(iEntity, var_owner);
-        static iItem;
-        if (is_user_alive(iOwner)) {
-            iItem = get_member(iOwner, m_pActiveItem);
-
-            if (is_nullent(iItem)) {
-                set_entvar(iEntity, var_flags, FL_KILLME);
-            }
-            else if (FClassnameIs(iItem, ITEM_CLASSNAME)) {
-
-            }
-            else {
-                set_entvar(iEntity, var_flags, FL_KILLME);
-            }
-        }
-        else {
-            set_entvar(iEntity, var_flags, FL_KILLME);
-        }
-    }
-
-    set_entvar(iEntity, var_nextthink, get_gametime() + 0.025);
-}
-```
