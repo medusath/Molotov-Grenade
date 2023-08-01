@@ -8,7 +8,7 @@ Custom Molotov grenade in Counter Strike 1.6 for AMX Mod X
 - Модифицированный `delta.lst` (измененный body с 8 бит на 32 бита - `DEFINE_DELTA( body, DT_INTEGER, 32, 1.0 )`)
 
 ### Main theme —  [dev-cs.ru](https://dev-cs.ru/resources/1160/ "[GRENADE] Molotov")
-[![[Preview Video](https://img.youtube.com/vi/default.jpg)]([https://youtu.be/StTqXEQ2l-Y?t=35](https://youtu.be/c_ukD-klXqg) "Preview Video")
+[![Watch the video](https://img.youtube.com/vi/c_ukD-klXqg/default.jpg)](https://youtu.be/c_ukD-klXqg)
 
 ___
 **Автоматическое создание конфигурационного файла /addons/amxmodx/configs/plugins/molotov_grenade.cfg**
