@@ -182,3 +182,14 @@ ___
 - После горения на земле остаются следы *декали.
 - Частичная поддержка Health Nade. *Жертвуем оружием WEAPON_TMP 
   - ![HUD](images/hud.jpg)
+___
+
+`Использование нативов:`
+
+```
+native IsUserHasMolotov(params);
+native GiveUserMolotov(params);
+
+if(!IsUserHasMolotov(id))
+  GiveUserMolotov(id);
+```
