@@ -9,6 +9,7 @@ Custom Molotov grenade in Counter Strike 1.6 for AMX Mod X
 
 ### Main theme —  [dev-cs.ru](https://dev-cs.ru/resources/1160/ "[GRENADE] Molotov")
 ### [Preview Video](https://youtu.be/c_ukD-klXqg "Youtube")
+[![[Preview Video]()]([https://youtu.be/StTqXEQ2l-Y?t=35](https://youtu.be/c_ukD-klXqg)s "Preview Video")
 
 ___
 **Автоматическое создание конфигурационного файла /addons/amxmodx/configs/plugins/molotov_grenade.cfg**
