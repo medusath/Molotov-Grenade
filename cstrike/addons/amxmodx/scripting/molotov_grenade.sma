@@ -4,13 +4,33 @@
 #include <reapi>
 #include <xs>
 
-#define PLUGIN_NAME "Molotov Grenade"
-#define PLUGIN_VERSION "1.0.3"
+#define PLUGIN_NAME "Molotov/Incendiary Grenade"
+#define PLUGIN_VERSION "1.1.0"
 #define PLUGIN_AUTHOR "medusa"
 
-new const CONFIG_NAME[] = "molotov_grenade"; //Название конфигурационного файла
+/* Команды для покупки */
 
-#define ALLOW_CUSTOMNADE //Частичная поддержка Health Nade. *Жертвуем оружием WEAPON_TMP
+new const BUY_COMMANDS[][] = {
+	"molotov",
+	"mol",
+	"incendiary",
+	"inc",
+	"buy molotov",
+	"say /molotov",
+	"say /mol",
+	"say /inc",
+	"say_team /molotov",
+	"say_team /mol",
+	"say_team /inc"
+};
+
+/*  Поддержка дополнительного снаряжения которое занимает слот WEAPON_GLOCK
+например [Health Nade]. Жертвуем каким-либо оружием например [WEAPON_TMP].
+Необходимо расскоментировать #define ALLOW_CUSTOMNADE */
+
+//#define ALLOW_CUSTOMNADE
+
+new const CONFIG_NAME[] = "molotov_grenade";
 
 new const MOLOTOV_FIRE_CLASSNAME[] = "molotov";
 new const EFFECT_CLASSNAME_MUZZLEFLASH[] = "weapon_molotov_muzzleflash";
@@ -28,8 +48,11 @@ const WeaponIdType:WEAPON_NEW_ID = WEAPON_GLOCK;
 const WeaponIdType:WEAPON_FAKE_ID = WeaponIdType:76;
 new const WEAPON_NAME[] = "weapon_smokegrenade";
 new const AMMO_NAME[] = "Molotov";
-new const WEAPON_NEW_NAME[] = "/grenaderad/weapon_molotov";
+new const WEAPON_NEW_NAME[] = "/grenade/weapon_molotov";
+new const WEAPON_INCENDIARY_NAME[] = "/grenade/weapon_incendiary";
+new const AMMO_NAME_INCENDIARY[] = "Incendiary";
 new const ITEM_CLASSNAME[] = "weapon_molotov";
+
 new const GRENADE_CLASSNAME[] = "grenade_molotov";
 const AMMO_ID = 17;
 const NUM_SLOT = 5;
@@ -41,33 +64,39 @@ new MsgIdWeaponList, MsgIdAmmoPickup;
 new FwdRegUserMsg, MsgHookWeaponList;
 #endif
 
-new SpriteFireColumn, SpriteFireExplode, SpriteFireBall, SpriteFireGround, GlassGibsModel;
+new SpriteFireColumn, SpriteFireExplode, SpriteFireBall, SpriteFireGround, SpriteFireGround_CT, GlassGibsModel;
 new bool:bCreate[MAX_PLAYERS + 1];
 new bool:bCreateWater[MAX_PLAYERS + 1] = false;
 new sizes[] = { 51, 51, 51 }, count = 3;
 
-new const WEAPON_MODEL_VIEW_MOLOTOV[] = "models/grenaderad/v_molotov.mdl";
-new const WEAPON_MODEL_PLAYER_MOLOTOV[] = "models/grenaderad/p_molotov.mdl";
-new const WEAPON_MODEL_WORLD_MOLOTOV[] = "models/grenaderad/w_molotov.mdl";
+new const WEAPON_MODEL_VIEW_MOLOTOV[] = "models/grenade/v_molotovgrenade.mdl";
+new const WEAPON_MODEL_PLAYER_MOLOTOV[] = "models/grenade/p_molotovgrenade.mdl";
+new const WEAPON_MODEL_WORLD_MOLOTOV[] = "models/grenade/w_molotovgrenade.mdl";
 
-new const MOLOTOV_MODEL_FLOOR[] = "models/grenaderad/molotov_fire_floor.mdl";
+new const WEAPON_MODEL_VIEW_INCENDIARY[] = "models/grenade/v_incendiarygrenade.mdl";
+new const WEAPON_MODEL_PLAYER_INCENDIARY[] = "models/grenade/p_incendiarygrenade.mdl";
+new const WEAPON_MODEL_WORLD_INCENDIARY[] = "models/grenade/w_incendiarygrenade.mdl";
 
-new const MOLOTOV_MODEL_GIBS[] = "models/grenaderad/gibs_molotov.mdl";
+new const MOLOTOV_MODEL_FLOOR[] = "models/grenade/molotov_fire_floor.mdl";
 
-new const MOLOTOV_SPRITE_FIRE_BALL[] = "sprites/grenaderad/molotov_fire_ball.spr";
-new const MOLOTOV_SPRITE_FIRE_COLUMN[] = "sprites/grenaderad/molotov_fire_column.spr";
-new const MOLOTOV_SPRITE_FIRE_EXPLODE[] = "sprites/grenaderad/molotov_fire_explode_c.spr";
-new const MOLOTOV_SPRITE_FIRE_GROUND[] = "sprites/grenaderad/molotov_fire_ground.spr";
-new const MOLOTOV_SPRITE_XPARK1[] = "sprites/grenaderad/molotov_fire_blend_c.spr";
-new const MOLOTOV_SPRITE_WICK[] = "sprites/grenaderad/molotov_wick.spr";
+new const MOLOTOV_MODEL_GIBS[] = "models/grenade/gibs_molotov.mdl";
 
-new const MOLOTOV_SOUND_EXPLODE[] = "weapons/grenaderad/molotov_explode.wav";
-new const MOLOTOV_SOUND_HIT[] = "weapons/grenaderad/molotov_hit.wav";
-new const MOLOTOV_SOUND_IDLE[] = "weapons/grenaderad/molotov_idle_loop.wav";
-new const MOLOTOV_SOUND_LOOP[] = "weapons/grenaderad/molotov_fire_ground.wav";
-new const MOLOTOV_SOUND_FADEOUT[] = "weapons/grenaderad/molotov_fire_fadeout.wav";
-new const MOLOTOV_SOUND_EXT[] = "weapons/grenaderad/molotov_extinguish.wav";
-new const MOLOTOV_SOUND_GIBS[] = "weapons/grenaderad/molotov_gibs.wav";
+new const MOLOTOV_SPRITE_FIRE_BALL[] = "sprites/grenade/molotov_fire_ball.spr";
+new const MOLOTOV_SPRITE_FIRE_COLUMN[] = "sprites/grenade/molotov_fire_column.spr";
+new const MOLOTOV_SPRITE_FIRE_EXPLODE[] = "sprites/grenade/molotov_fire_explode_c.spr";
+new const MOLOTOV_SPRITE_FIRE_GROUND[] = "sprites/grenade/molotov_fire_ground.spr";
+new const MOLOTOV_SPRITE_FIRE_GROUND_CT[] = "sprites/grenade/incendiary_fire_ground.spr";
+new const MOLOTOV_SPRITE_XPARK1[] = "sprites/grenade/molotov_fire_blend_c.spr";
+new const MOLOTOV_SPRITE_WICK[] = "sprites/grenade/molotov_wick.spr";
+
+new const MOLOTOV_SOUND_EXPLODE[] = "weapons/grenade/molotov_explode.wav";
+new const MOLOTOV_SOUND_HIT[] = "weapons/grenade/molotov_hit.wav";
+new const INCENDIARY_SOUND_HIT[] = "weapons/grenade/incendiary_hit.wav";
+new const MOLOTOV_SOUND_IDLE[] = "weapons/grenade/molotov_idle_loop.wav";
+new const MOLOTOV_SOUND_LOOP[] = "weapons/grenade/molotov_fire_ground.wav";
+new const MOLOTOV_SOUND_FADEOUT[] = "weapons/grenade/molotov_fire_fadeout.wav";
+new const MOLOTOV_SOUND_EXT[] = "weapons/grenade/molotov_extinguish.wav";
+new const MOLOTOV_SOUND_GIBS[] = "weapons/grenade/molotov_gibs.wav";
 new const GUNPICKUP_SOUND[] = "items/gunpickup2.wav";
 new const AMMOPICKUP_SOUND[] = "items/9mmclip1.wav";
 
@@ -87,34 +116,44 @@ enum CvarStruct {
 	Float:CVAR_RADIUS,
 	Float:CVAR_THROWTIME,
 	CVAR_DURATION,
-	CVAR_DEMAGE_MODE,
-	CVAR_DEMAGE_RADIUS_MODE,
-	Float:CVAR_DEMAGE_TIME,
-	Float:CVAR_DEMAGE_VALUE,
+	CVAR_DAMAGE_MODE,
+	CVAR_DAMAGE_RADIUS_MODE,
+	Float:CVAR_DAMAGE_TIME,
+	Float:CVAR_DAMAGE_VALUE,
+	Float:CVAR_DAMAGE_MAX_MULT,
 	CVAR_EFFECT_NUM,
 	CVAR_SMOKE_TOUCH,
 	CVAR_WATER_TOUCH,
-	CVAR_SKY_FORCE
+	CVAR_SKY_FORCE,
+	Float:CVAR_SMOKE_DURATION,
+	CVAR_SPREAD_ENABLE,
+	Float:CVAR_SPREAD_RADIUS
 }
 
 new g_pCvarBuyAccess;
 new g_pCvarSmokeOwner;
 new g_eCvar[CvarStruct];
 new BuyLimit[MAX_PLAYERS + 1];
+new Float:g_flFireAccum[MAX_PLAYERS + 1];
+new Float:g_flLastFireHit[MAX_PLAYERS + 1];
 
-new HookChain:HookChain_CBasePlayer_TakeDamage; 
+new HookChain:HookChain_CBasePlayer_TakeDamage;
 new HookChain:HookChain_deathNoticePostHook;
 
 public plugin_precache() {
 	precache_model(WEAPON_MODEL_VIEW_MOLOTOV);
 	precache_model(WEAPON_MODEL_PLAYER_MOLOTOV);
 	precache_model(WEAPON_MODEL_WORLD_MOLOTOV);
+	precache_model(WEAPON_MODEL_VIEW_INCENDIARY);
+	precache_model(WEAPON_MODEL_PLAYER_INCENDIARY);
+	precache_model(WEAPON_MODEL_WORLD_INCENDIARY);
 	GlassGibsModel = precache_model(MOLOTOV_MODEL_GIBS);
 
 	if(get_cvar_num("sv_auto_precache_sounds_in_models") == 0) {
 		UTIL_PrecacheSoundsFromModel(WEAPON_MODEL_VIEW_MOLOTOV);
 	}
 	UTIL_PrecacheSpritesFromTxt(WEAPON_NEW_NAME);
+	UTIL_PrecacheSpritesFromTxt(WEAPON_INCENDIARY_NAME);
 
 #if WEAPON_NEW_ID != WEAPON_GLOCK
 	MsgIdWeaponList = get_user_msgid("WeaponList");
@@ -131,6 +170,7 @@ public plugin_precache() {
 
 	precache_sound(MOLOTOV_SOUND_EXPLODE);
 	precache_sound(MOLOTOV_SOUND_HIT);
+	precache_sound(INCENDIARY_SOUND_HIT);
 	precache_sound(MOLOTOV_SOUND_IDLE);
 	precache_sound(MOLOTOV_SOUND_LOOP);
 	precache_sound(MOLOTOV_SOUND_FADEOUT);
@@ -140,6 +180,7 @@ public plugin_precache() {
 	precache_sound(AMMOPICKUP_SOUND);
 
 	SpriteFireGround = precache_model(MOLOTOV_SPRITE_FIRE_GROUND);
+	SpriteFireGround_CT = precache_model(MOLOTOV_SPRITE_FIRE_GROUND_CT);
 	SpriteFireBall = precache_model(MOLOTOV_SPRITE_FIRE_BALL);
 	SpriteFireColumn = precache_model(MOLOTOV_SPRITE_FIRE_COLUMN);
 	SpriteFireExplode = precache_model(MOLOTOV_SPRITE_FIRE_EXPLODE);
@@ -149,7 +190,7 @@ public plugin_init() {
 	register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
 	register_dictionary("molotov_grenade.txt");
-	
+
 	g_pCvarBuyAccess = create_cvar(
 		"molotov_buy_access", "", FCVAR_SERVER,
 		.description = fmt("%L", LANG_SERVER, "CVAR_ACCESS")
@@ -182,8 +223,8 @@ public plugin_init() {
 			.has_min = true, .min_val = 0.0
 			),
 		g_eCvar[CVAR_COST]
-		);	
-		
+		);
+
 	bind_pcvar_num(
 		create_cvar(
 			"molotov_buy_limit", "1", FCVAR_SERVER,
@@ -191,11 +232,11 @@ public plugin_init() {
 			.has_min = true, .min_val = -1.0
 			),
 		g_eCvar[CVAR_BUY_LIMIT]
-		);	
-		
+		);
+
 	bind_pcvar_num(
 		create_cvar(
-			"molotov_limit_round", "2", FCVAR_SERVER,
+			"molotov_limit_round", "0", FCVAR_SERVER,
 			.description = fmt("%L", LANG_SERVER, "CVAR_LIMIT_ROUND"),
 			.has_min = true, .min_val = 0.0
 			),
@@ -209,8 +250,8 @@ public plugin_init() {
 			.has_min = true, .min_val = 0.0
 			),
 		g_eCvar[CVAR_HIT_PLAYER]
-		);	
-		
+		);
+
 	bind_pcvar_num(
 		create_cvar(
 			"molotov_killfeed", "0", FCVAR_SERVER,
@@ -223,7 +264,7 @@ public plugin_init() {
 
 	bind_pcvar_float(
 		create_cvar(
-			"molotov_radius", "132.0", FCVAR_SERVER,
+			"molotov_radius", "128.0", FCVAR_SERVER,
 			.description = fmt("%L", LANG_SERVER, "CVAR_RADIUS"),
 			.has_min = true, .min_val = 0.0
 			),
@@ -241,7 +282,7 @@ public plugin_init() {
 
 	bind_pcvar_num(
 		create_cvar(
-			"molotov_duration", "12", FCVAR_SERVER,
+			"molotov_duration", "8", FCVAR_SERVER,
 			.description = fmt("%L", LANG_SERVER, "CVAR_DURATION"),
 			.has_min = true, .min_val = 0.0
 			),
@@ -250,42 +291,51 @@ public plugin_init() {
 
 	bind_pcvar_num(
 		create_cvar(
-			"molotov_demage_mode", "1", FCVAR_SERVER,
-			.description = fmt("%L", LANG_SERVER, "CVAR_DEMAGE_MODE"),
+			"molotov_damage_mode", "1", FCVAR_SERVER,
+			.description = fmt("%L", LANG_SERVER, "CVAR_DAMAGE_MODE"),
 			.has_min = true, .min_val = 0.0,
 			.has_max = true, .max_val = 2.0
 			),
-		g_eCvar[CVAR_DEMAGE_MODE]
-		);	
+		g_eCvar[CVAR_DAMAGE_MODE]
+		);
 
 	bind_pcvar_num(
 		create_cvar(
-			"molotov_demage_radius_mode", "2", FCVAR_SERVER,
-			.description = fmt("%L", LANG_SERVER, "CVAR_DEMAGE_RADIUS_MODE"),
+			"molotov_damage_radius_mode", "2", FCVAR_SERVER,
+			.description = fmt("%L", LANG_SERVER, "CVAR_DAMAGE_RADIUS_MODE"),
 			.has_min = true, .min_val = 1.0,
 			.has_max = true, .max_val = 2.0
 			),
-		g_eCvar[CVAR_DEMAGE_RADIUS_MODE]
+		g_eCvar[CVAR_DAMAGE_RADIUS_MODE]
 		);
 
 	bind_pcvar_float(
 		create_cvar(
-			"molotov_demage_time", "0.20", FCVAR_SERVER,
-			.description = fmt("%L", LANG_SERVER, "CVAR_DEMAGE_TIME"),
+			"molotov_damage_time", "0.25", FCVAR_SERVER,
+			.description = fmt("%L", LANG_SERVER, "CVAR_DAMAGE_TIME"),
 			.has_min = true, .min_val = 0.0
 			),
-		g_eCvar[CVAR_DEMAGE_TIME]
+		g_eCvar[CVAR_DAMAGE_TIME]
 		);
 
 	bind_pcvar_float(
 		create_cvar(
-			"molotov_demage_value", "20.0", FCVAR_SERVER,
-			.description = fmt("%L", LANG_SERVER, "CVAR_DEMAGE_VALUE"),
+			"molotov_damage_value", "25.0", FCVAR_SERVER,
+			.description = fmt("%L", LANG_SERVER, "CVAR_DAMAGE_VALUE"),
 			.has_min = true, .min_val = 0.0
 			),
-		g_eCvar[CVAR_DEMAGE_VALUE]
+		g_eCvar[CVAR_DAMAGE_VALUE]
 		);
-		
+
+	bind_pcvar_float(
+		create_cvar(
+			"molotov_damage_max_mult", "2.5", FCVAR_SERVER,
+			.description = fmt("%L", LANG_SERVER, "CVAR_DAMAGE_MAX_MULT"),
+			.has_min = true, .min_val = 1.0
+			),
+		g_eCvar[CVAR_DAMAGE_MAX_MULT]
+		);
+
 	bind_pcvar_num(
 		create_cvar(
 			"molotov_effect_num", "4", FCVAR_SERVER,
@@ -295,7 +345,7 @@ public plugin_init() {
 			),
 		g_eCvar[CVAR_EFFECT_NUM]
 		);
-		
+
 	bind_pcvar_num(
 		create_cvar(
 			"molotov_smoke_touch", "1", FCVAR_SERVER,
@@ -305,7 +355,7 @@ public plugin_init() {
 			),
 		g_eCvar[CVAR_SMOKE_TOUCH]
 		);
-		
+
 	g_pCvarSmokeOwner = create_cvar(
 		"molotov_smoke_owner", "models/w_smokegrenade.mdl", FCVAR_SERVER,
 		.description = fmt("%L", LANG_SERVER, "CVAR_SMOKE_OWNER")
@@ -331,11 +381,39 @@ public plugin_init() {
 		g_eCvar[CVAR_SKY_FORCE]
 		);
 
+	bind_pcvar_float(
+		create_cvar(
+			"molotov_smoke_duration", "18.0", FCVAR_SERVER,
+			.description = fmt("%L", LANG_SERVER, "CVAR_SMOKE_DURATION"),
+			.has_min = true, .min_val = 1.0
+			),
+		g_eCvar[CVAR_SMOKE_DURATION]
+		);
+
+	bind_pcvar_num(
+		create_cvar(
+			"molotov_spread_enable", "1", FCVAR_SERVER,
+			.description = fmt("%L", LANG_SERVER, "CVAR_SPREAD_ENABLE")
+			),
+		g_eCvar[CVAR_SPREAD_ENABLE]
+		);
+
+	bind_pcvar_float(
+		create_cvar(
+			"molotov_spread_radius", "32.0", FCVAR_SERVER,
+			.description = fmt("%L", LANG_SERVER, "CVAR_SPREAD_RADIUS"),
+			.has_min = true, .min_val = 0.0
+			),
+		g_eCvar[CVAR_SPREAD_RADIUS]
+		);
+
 	AutoExecConfig(true, CONFIG_NAME);
 
 	register_clcmd(WEAPON_NEW_NAME, "CmdSelect");
+	register_clcmd(WEAPON_INCENDIARY_NAME, "CmdSelect");
 
-	register_clcmd("molotov", "BuyMolotov_Cmd");
+	for (new i = 0; i < sizeof(BUY_COMMANDS); i++)
+		register_clcmd(BUY_COMMANDS[i], "BuyMolotov_Cmd");
 
 	#if WEAPON_NEW_ID != WEAPON_GLOCK
 		RegisterHookChain(RG_CBasePlayer_HasRestrictItem, "CBasePlayer_RestrictItem_Pre", false)
@@ -356,22 +434,23 @@ public plugin_init() {
 	RegisterHookChain(RG_CBasePlayer_ThrowGrenade, "CBasePlayer_ThrowGrenade_Pre", false);
 
 	DisableHookChain((HookChain_CBasePlayer_TakeDamage = RegisterHookChain(RG_CBasePlayer_TakeDamage, "CBasePlayer_TakeDamage_Pre", false)));
-	
+
 	RegisterHookChain(RG_CSGameRules_DeathNotice, "CSGameRules_DeathNotice_Pre", false);
 	DisableHookChain((HookChain_deathNoticePostHook = RegisterHookChain(RG_CSGameRules_DeathNotice, "CSGameRules_DeathNotice_Post", true)));
-	
+
 	RegisterHookChain(RG_CGrenade_ExplodeSmokeGrenade, "CSGrenade_ExplodeSmokeGrenade_Pre", false);
 	RegisterHam(Ham_Think, "env_sprite", "FireMolotov_Think_Post", true);
-	
+
 	new szAccess[24];
 	get_pcvar_string(g_pCvarBuyAccess, szAccess, charsmax(szAccess));
 	g_eCvar[CVAR_BUY_ACCESS] = read_flags(szAccess);
-	
+	hook_cvar_change(g_pCvarBuyAccess, "CvarChange_BuyAccess");
+
 	MsgIdAmmoPickup = get_user_msgid("AmmoPickup");
 
 #if WEAPON_NEW_ID == WEAPON_GLOCK
 	MsgIdWeaponList = get_user_msgid("WeaponList");
-	UTIL_WeapoList(
+	UTIL_WeaponList(
 		MSG_INIT, 0,
 		WEAPON_NEW_NAME,
 		AMMO_ID, 1,
@@ -386,7 +465,6 @@ public plugin_init() {
 #endif
 }
 
-
 public OnConfigsExecuted() {
 	g_eCvar[CVAR_BUYTIME] = get_cvar_float("mp_buytime");
 	#if !defined ALLOW_CUSTOMNADE
@@ -396,38 +474,42 @@ public OnConfigsExecuted() {
 
 public plugin_natives()
 {
-    register_native("IsUserHasMolotov", "NativeIsUserHasMolotov", false);
-    register_native("GiveUserMolotov", "NativeGiveUserMolotov", false);
+	register_native("IsUserHasMolotov", "NativeIsUserHasMolotov", false);
+	register_native("GiveUserMolotov", "NativeGiveUserMolotov", false);
 }
 
 public NativeGiveUserMolotov(plugin, params)
 {
-    enum { arg_player = 1 };
+	enum { arg_player = 1 };
 
-    new id = get_param(arg_player);
+	new id = get_param(arg_player);
 
-    if(!is_user_connected(id))
-    {
-        return false;
-    }
+	if(!is_user_connected(id))
+	{
+		return false;
+	}
 
-    giveNade(id);
+	giveNade(id);
 
-    return true;
+	return true;
 }
 
 public NativeIsUserHasMolotov(plugin, params)
 {
-    enum { arg_player = 1 };
+	enum { arg_player = 1 };
 
-    new id = get_param(arg_player);
+	new id = get_param(arg_player);
 
-    if(!is_user_connected(id))
-    {
-        return false;
-    }
+	if(!is_user_connected(id))
+	{
+		return false;
+	}
 
-    return bool:(get_member(id, m_rgAmmo, AMMO_ID));
+	return bool:(get_member(id, m_rgAmmo, AMMO_ID));
+}
+
+public CvarChange_BuyAccess(pcvar, const old_value[], const new_value[]) {
+	g_eCvar[CVAR_BUY_ACCESS] = read_flags(new_value);
 }
 
 public BuyMolotov_Cmd(id) {
@@ -438,11 +520,11 @@ public BuyMolotov_Cmd(id) {
 	new Float: flCurTime = get_gametime();
 	new Float: flRoundStartTime = get_member_game(m_fRoundStartTime);
 	new bitAccess = g_eCvar[CVAR_BUY_ACCESS];
-	
+
 	if (g_eCvar[CVAR_CHECK_BUYZONE] && !rg_get_user_buyzone(id)) {
 		return PLUGIN_HANDLED;
 	}
-	
+
 	if (get_member(id, m_bIsVIP)) {
 		client_print(id, print_center, "%L", LANG_PLAYER, "NTF_VIP");
 
@@ -454,21 +536,21 @@ public BuyMolotov_Cmd(id) {
 
 		return PLUGIN_HANDLED;
 	}
-	
+
 	if(get_member_game(m_iTotalRoundsPlayed) + 1 < g_eCvar[CVAR_LIMIT_ROUND]){
 		client_print(id, print_center,"%L", LANG_PLAYER, "NTF_WPN_CANTBUY" );
 		return PLUGIN_HANDLED;
 	}
-	
+
 	if(flCurTime - flRoundStartTime > g_eCvar[CVAR_BUYTIME] * 60  && g_eCvar[CVAR_BUYTIME] != -1){
 		client_print(id, print_center, "%L", LANG_PLAYER, "NTF_WPN_CANTBUY_TIME");
-	
+
 		return PLUGIN_HANDLED;
 	}
 
-	if(BuyLimit[id] == 0 && BuyLimit[id] != -1){
-		client_print(id, print_center, "%L", LANG_PLAYER, "NTF_ALREADY_HO");
-		
+	if(BuyLimit[id] == 0){
+		client_print(id, print_center, "%L", LANG_PLAYER, "NTF_BUY_LIMIT");
+
 		return PLUGIN_HANDLED;
 	}
 
@@ -480,14 +562,14 @@ public BuyMolotov_Cmd(id) {
 
 	if(get_member(id, m_rgAmmo, AMMO_ID)) {
 		client_print(id, print_center, "%L", LANG_PLAYER, "NTF_CARRY_ANY");
-		
+
 		return PLUGIN_HANDLED;
 	}
-	
+
 	rg_add_account(id, -g_eCvar[CVAR_COST]);
 	rh_emit_sound2(id, 0, CHAN_ITEM, AMMOPICKUP_SOUND);
 	giveNade(id);
-	BuyLimit[id]--;
+	if (BuyLimit[id] != -1) BuyLimit[id]--;
 	return PLUGIN_HANDLED;
 }
 
@@ -497,7 +579,7 @@ public CBasePlayer_RestrictItem_Pre(id, ItemID:item, ItemRestType:iRestType) {
 		return HC_CONTINUE
 	}
 
-	if(item == ITEM_TMP) { 
+	if(item == ITEM_TMP) {
 		SetHookChainReturn(ATYPE_BOOL, true)
 		return HC_SUPERCEDE
 	}
@@ -509,7 +591,7 @@ public CBasePlayer_RestrictItem_Pre(id, ItemID:item, ItemRestType:iRestType) {
 public CBasePlayer_OnSpawnEquip_Post(const id){
 	if(!is_user_connected(id))
 		return;
-	
+
 	BuyLimit[id] = g_eCvar[CVAR_BUY_LIMIT];
 	new bitAccess = g_eCvar[CVAR_BUY_ACCESS];
 
@@ -518,17 +600,19 @@ public CBasePlayer_OnSpawnEquip_Post(const id){
 
 	if (bitAccess && ~get_user_flags(id) & bitAccess)
 		return;
-	
+
 	if(get_member_game(m_iTotalRoundsPlayed) + 1 < g_eCvar[CVAR_LIMIT_ROUND])
-        return;
-	
+		return;
 
 	giveNade(id);
 }
 
 public CBasePlayer_Killed_Post(victim, attacker, inflictor){
 	if(!is_user_connected(victim)) return;
-	
+
+	g_flFireAccum[victim] = 0.0;
+	g_flLastFireHit[victim] = 0.0;
+
 	new activeItem = get_member(victim, m_pActiveItem);
 	if (!is_nullent(activeItem) && FClassnameIs(activeItem, ITEM_CLASSNAME) && get_entvar(victim, var_button) & IN_ATTACK && get_member(victim, m_rgAmmo, get_member(activeItem, m_Weapon_iPrimaryAmmoType)) > 0) {
 		new Float:origin[3], Float:view_ofs[3], Float:vecSrc[3], Float:vecThrow[3];
@@ -544,19 +628,19 @@ public CBasePlayer_Killed_Post(victim, attacker, inflictor){
 		new ammoIndex = get_member(activeItem, m_Weapon_iPrimaryAmmoType);
 		set_member(victim, m_rgAmmo, get_member(victim, m_rgAmmo, ammoIndex) - 1, ammoIndex);
 		set_member(activeItem, m_flStartThrow, 0.0);
-		
+
 		Molotov_DeleteMuzzleFlash(activeItem);
 	}
-	
+
 	#if !defined ALLOW_CUSTOMNADE
 	if(!get_member(victim, m_rgAmmo, AMMO_ID)) return;
-	
+
 	switch(g_eCvar[CVAR_NADE_DROPS]){
 		case 1:
 		{
 			if(rg_get_player_item(victim, "weapon_hegrenade", GRENADE_SLOT) | rg_get_player_item(victim, "weapon_flashbang", GRENADE_SLOT) | rg_get_player_item(victim, "weapon_smokegrenade", GRENADE_SLOT))
 			return;
-			
+
 			dropNade(victim);
 		}
 		case 2: dropNade(victim);
@@ -578,8 +662,6 @@ dropNade(const other){
 
 	ExecuteHam(Ham_Player_GetGunPosition, other, origin);
 
-	//get_entvar(other, var_origin, origin);
-
 	velocity[0] = random_float(-45.0, 45.0);
 	velocity[1] = random_float(-45.0, 45.0);
 
@@ -590,7 +672,7 @@ dropNade(const other){
 	set_entvar(dropnade, var_solid, SOLID_TRIGGER);
 	set_entvar(dropnade, var_velocity, velocity);
 	engfunc(EngFunc_SetOrigin, dropnade, origin);
-	
+
 	SetTouch(dropnade, "Drop_ItemMolotov_Touch");
 }
 #endif
@@ -600,7 +682,7 @@ public CSGameRules_DeathNotice_Pre(victim, attacker, inflictor)
 	if(g_eCvar[CVAR_KILLFEED] == 0){
 		return;
 	}
-	
+
 	if (!is_user_connected(attacker)){
 		return;
 	}
@@ -609,10 +691,14 @@ public CSGameRules_DeathNotice_Pre(victim, attacker, inflictor)
 	new nameattacker[32], name[32];
 	get_entvar(attacker, var_netname, nameattacker, charsmax(nameattacker));
 
+	new bool:bIsCT = bool:(get_entvar(inflictor, var_iuser4) == 1);
+	new const tag_molotov[] = "[ᴍᴏʟᴏᴛᴏᴠ]";
+	new const tag_incendiary[] = "[ɪɴᴄ]";
+
 	if(strlen(nameattacker) > 16) {
-	formatex(name, charsmax(name), "%.16s [ᴍᴏʟᴏᴛᴏᴠ]", nameattacker);
+	formatex(name, charsmax(name), "%.16s %s", nameattacker, bIsCT ? tag_incendiary : tag_molotov);
 	}else{
-	formatex(name, charsmax(name), "%s [ᴍᴏʟᴏᴛᴏᴠ]", nameattacker);}  
+	formatex(name, charsmax(name), "%s %s", nameattacker, bIsCT ? tag_incendiary : tag_molotov);}
 	message_begin(MSG_ALL, SVC_UPDATEUSERINFO);
 	write_byte(attacker - 1);
 	write_long(get_user_userid(attacker));
@@ -626,7 +712,7 @@ public CSGameRules_DeathNotice_Pre(victim, attacker, inflictor)
 	for(new i = 0; i < 16; i++)
 		write_byte(0);
 	message_end();
-		
+
 	EnableHookChain(HookChain_deathNoticePostHook);
 	}
 }
@@ -636,8 +722,6 @@ public CSGameRules_DeathNotice_Post(victimEntIndex, killerEntIndex, inflictorEnt
 	rh_update_user_info(killerEntIndex);
 	DisableHookChain(HookChain_deathNoticePostHook);
 }
-
-
 
 #if WEAPON_NEW_ID != WEAPON_GLOCK
 public RegUserMsg_Post(const name[]) {
@@ -672,7 +756,7 @@ public HookWeaponList(const msg_id, const msg_dest, const msg_entity) {
 	set_msg_arg_int(arg_slot, ARG_BYTE, _:GRENADE_SLOT - 1);
 	set_msg_arg_int(arg_position, ARG_BYTE, NUM_SLOT);
 	set_msg_arg_int(arg_flags, ARG_BYTE, ITEM_FLAG_LIMITINWORLD | ITEM_FLAG_EXHAUSTIBLE);
-	
+
 	return PLUGIN_CONTINUE;
 }
 #endif
@@ -681,7 +765,7 @@ public CmdSelect(const id) {
 	if (!is_user_alive(id)) {
 		return PLUGIN_HANDLED;
 	}
-	
+
 	new item = rg_get_player_item(id, ITEM_CLASSNAME, GRENADE_SLOT);
 	if (item != 0 && get_member(id, m_pActiveItem) != item) {
 		rg_switch_weapon(id, item);
@@ -702,7 +786,7 @@ public CSGameRules_CleanUpMap_Post() {
 		destroyNade(MolotovFire);
 		MolotovFire = rg_find_ent_by_class(MolotovFire, MOLOTOV_FIRE_CLASSNAME, false);
 	}
-	
+
 	new SmokeTouch = rg_find_ent_by_class(NULLENT, CLASSNAME_SMOKE_TOUCHER, false);
 	while (SmokeTouch > 0) {
 		SetTouch(SmokeTouch, "");
@@ -712,7 +796,7 @@ public CSGameRules_CleanUpMap_Post() {
 }
 
 public CBasePlayer_GiveAmmo_Pre(const id, const amount, const name[]) {
-	if (strcmp(name, AMMO_NAME) != 0) {
+	if (strcmp(name, AMMO_NAME) != 0 && strcmp(name, AMMO_NAME_INCENDIARY) != 0) {
 		return HC_CONTINUE;
 	}
 
@@ -721,11 +805,15 @@ public CBasePlayer_GiveAmmo_Pre(const id, const amount, const name[]) {
 	return HC_SUPERCEDE;
 }
 
-
 public CBasePlayerWeapon_DefaultDeploy_Pre(const item, const szViewModel[], const szWeaponModel[], const iAnim, const szAnimExt[], const skiplocal) {
 	if (FClassnameIs(item, ITEM_CLASSNAME)) {
-		SetHookChainArg(2, ATYPE_STRING, WEAPON_MODEL_VIEW_MOLOTOV);
-		SetHookChainArg(3, ATYPE_STRING, WEAPON_MODEL_PLAYER_MOLOTOV);
+		if (get_entvar(item, var_iuser4) == 1) {
+			SetHookChainArg(2, ATYPE_STRING, WEAPON_MODEL_VIEW_INCENDIARY);
+			SetHookChainArg(3, ATYPE_STRING, WEAPON_MODEL_PLAYER_INCENDIARY);
+		} else {
+			SetHookChainArg(2, ATYPE_STRING, WEAPON_MODEL_VIEW_MOLOTOV);
+			SetHookChainArg(3, ATYPE_STRING, WEAPON_MODEL_PLAYER_MOLOTOV);
+		}
 	}
 
 	new WeaponIdType:wid = WeaponIdType:rg_get_iteminfo(item, ItemInfo_iId);
@@ -761,16 +849,15 @@ public Item_Deploy_Post(const item) {
 
 public Item_Holster_Pre(const item) {
 	new other = get_member(item, m_pPlayer);
-	
 	rh_emit_sound2(other, 0, CHAN_WEAPON, MOLOTOV_SOUND_IDLE, 0.0, ATTN_NONE, SND_STOP);
 }
 
 public Item_Holster_Post(const item) {
 	new other = get_member(get_member(item, m_pPlayer), m_rgpPlayerItems, GRENADE_SLOT);
-	
+
 	while(!is_nullent(other)) {
 		Molotov_DeleteMuzzleFlash(item);
-		
+
 		if (item != other && WeaponIdType:rg_get_iteminfo(other, ItemInfo_iId) == WEAPON_FAKE_ID) {
 			rg_set_iteminfo(other, ItemInfo_iId, WEAPON_ID);
 		}
@@ -784,7 +871,7 @@ public Item_PrimaryAttack_Pre(item) {
 	new other = get_member(item, m_pPlayer);
 
 	if(g_eCvar[CVAR_WATER_TOUCH])
-	{ 
+	{
 		if( get_entvar(other, var_waterlevel) > 2 )
 		{
 			if(bCreateWater[other] ){
@@ -808,13 +895,14 @@ public Item_PrimaryAttack_Pre(item) {
 		}
 
 		if (!bCreate[other]) {
-			Molotov_CreateMuzzleFlash(item, other, MOLOTOV_SPRITE_FIRE_COLUMN, 200.0, 25.0, 0.028, 3);
-			Molotov_CreateMuzzleFlash(item, other, MOLOTOV_SPRITE_FIRE_BALL, 180.0, 30.0, 0.035, 3);
-			Molotov_CreateMuzzleFlash(item, other, MOLOTOV_SPRITE_FIRE_BALL, 250.0, 25.0, 0.026, 4);
-			Molotov_CreateMuzzleFlash(item, other, MOLOTOV_SPRITE_XPARK1, 100.0, 1.0, 0.032, 4);
+			if (get_entvar(item, var_iuser4) != 1) {
+				Molotov_CreateMuzzleFlash(item, other, MOLOTOV_SPRITE_FIRE_COLUMN, 200.0, 25.0, 0.028, 3);
+				Molotov_CreateMuzzleFlash(item, other, MOLOTOV_SPRITE_FIRE_BALL, 180.0, 30.0, 0.035, 3);
+				Molotov_CreateMuzzleFlash(item, other, MOLOTOV_SPRITE_FIRE_BALL, 250.0, 25.0, 0.026, 4);
+				Molotov_CreateMuzzleFlash(item, other, MOLOTOV_SPRITE_XPARK1, 100.0, 1.0, 0.032, 4);
 
-			rh_emit_sound2(other, 0, CHAN_WEAPON, MOLOTOV_SOUND_IDLE, 0.5, 4.0);
-
+				rh_emit_sound2(other, 0, CHAN_WEAPON, MOLOTOV_SOUND_IDLE, 0.5, 4.0);
+			}
 			bCreate[other] = true;
 			if(g_eCvar[CVAR_WATER_TOUCH])
 				bCreateWater[other] = false;
@@ -827,7 +915,7 @@ public Item_PrimaryAttack_Pre(item) {
 
 }
 
-public CBasePlayer_ThrowGrenade_Pre(const id, const item, const Float:vecSrc[3], const Float:vecThrow[3], const Float:time, const const usEvent) {
+public CBasePlayer_ThrowGrenade_Pre(const id, const item, const Float:vecSrc[3], const Float:vecThrow[3], const Float:time, const usEvent) {
 	if (!FClassnameIs(item, ITEM_CLASSNAME)) {
 		return HC_CONTINUE;
 	}
@@ -851,33 +939,33 @@ public CBasePlayer_ThrowGrenade_Pre(const id, const item, const Float:vecSrc[3],
 
 public FireMolotov_Think_Post(iEntity)
 {
-    if (is_nullent(iEntity)) return;
+	if (is_nullent(iEntity)) return;
 
-    if (FClassnameIs(iEntity, EFFECT_CLASSNAME_MUZZLEFLASH)) {
-        static iOwner; iOwner = get_entvar(iEntity, var_owner);
-        static iItem;
-        if (is_user_alive(iOwner)) {
-            iItem = get_member(iOwner, m_pActiveItem);
+	if (FClassnameIs(iEntity, EFFECT_CLASSNAME_MUZZLEFLASH)) {
+		static iOwner; iOwner = get_entvar(iEntity, var_owner);
+		static iItem;
+		if (is_user_alive(iOwner)) {
+			iItem = get_member(iOwner, m_pActiveItem);
 
-            if (is_nullent(iItem)) {
-                set_entvar(iEntity, var_flags, FL_KILLME);
-            }
-            else if (FClassnameIs(iItem, ITEM_CLASSNAME)) {
+			if (is_nullent(iItem)) {
+				set_entvar(iEntity, var_flags, FL_KILLME);
+			}
+			else if (FClassnameIs(iItem, ITEM_CLASSNAME)) {
 
-            }
-            else {
-                set_entvar(iEntity, var_flags, FL_KILLME);
-            }
-        }
-        else {
-            set_entvar(iEntity, var_flags, FL_KILLME);
-        }
-    }
+			}
+			else {
+				set_entvar(iEntity, var_flags, FL_KILLME);
+			}
+		}
+		else {
+			set_entvar(iEntity, var_flags, FL_KILLME);
+		}
+	}
 
-    set_entvar(iEntity, var_nextthink, get_gametime() + 0.025);
+	set_entvar(iEntity, var_nextthink, get_gametime() + 0.025);
 }
 
-giveNade(const id) {
+giveNade(const id, const iSourceTeam = -1) {
 	new item = rg_get_player_item(id, ITEM_CLASSNAME, GRENADE_SLOT);
 	if (item != 0) {
 		giveAmmo(id, 1, AMMO_ID, 1);
@@ -903,19 +991,33 @@ giveNade(const id) {
 
 	set_member(item, m_iId, WEAPON_NEW_ID);
 
-	rg_set_iteminfo(item, ItemInfo_pszName, WEAPON_NEW_NAME);
-	rg_set_iteminfo(item, ItemInfo_pszAmmo1, AMMO_NAME);
+	new bool:bGiveIsCT;
+	if (iSourceTeam >= 0)
+		bGiveIsCT = (iSourceTeam == 1);
+	else
+		bGiveIsCT = (get_member(id, m_iTeam) == TEAM_CT);
+	rg_set_iteminfo(item, ItemInfo_pszName,  bGiveIsCT ? WEAPON_INCENDIARY_NAME : WEAPON_NEW_NAME);
+	rg_set_iteminfo(item, ItemInfo_pszAmmo1, bGiveIsCT ? AMMO_NAME_INCENDIARY   : AMMO_NAME);
+	set_entvar(item, var_iuser4, bGiveIsCT ? 1 : 0);
 	rg_set_iteminfo(item, ItemInfo_iMaxAmmo1, 1);
 	rg_set_iteminfo(item, ItemInfo_iId, WEAPON_FAKE_ID);
 	rg_set_iteminfo(item, ItemInfo_iPosition, NUM_SLOT);
 	rg_set_iteminfo(item, ItemInfo_iWeight, 1);
-	
+
 	dllfunc(DLLFunc_Touch, item, id);
 
 	if (get_entvar(item, var_owner) != id) {
 		set_entvar(item, var_flags, FL_KILLME);
 		return NULLENT;
 	}
+
+	UTIL_WeaponList(
+		MSG_ONE, id,
+		bGiveIsCT ? WEAPON_INCENDIARY_NAME : WEAPON_NEW_NAME,
+		AMMO_ID, 1,
+		-1, -1, GRENADE_SLOT, NUM_SLOT, WEAPON_NEW_ID,
+		ITEM_FLAG_LIMITINWORLD | ITEM_FLAG_EXHAUSTIBLE
+	);
 
 	return item;
 }
@@ -967,11 +1069,13 @@ throwNade(const id, const item, const Float:vecSrc[3], const Float:vecThrow[3], 
 	}
 
 	set_entvar(grenade, var_animtime, get_gametime());
-	set_entvar(grenade, var_sequence, random_num(2, 7));
+	set_entvar(grenade, var_sequence, random_num(2, 6));
 	set_entvar(grenade, var_framerate, 1.0);
 	set_entvar(grenade, var_gravity, 0.55);
 	set_entvar(grenade, var_friction, 0.8);
-	engfunc(EngFunc_SetModel, grenade, WEAPON_MODEL_WORLD_MOLOTOV);
+	new bool:bIsCT = bool:(get_entvar(item, var_iuser4) == 1);
+	set_entvar(grenade, var_iuser4, bIsCT ? 1 : 0);
+	engfunc(EngFunc_SetModel, grenade, bIsCT ? WEAPON_MODEL_WORLD_INCENDIARY : WEAPON_MODEL_WORLD_MOLOTOV);
 	set_entvar(grenade, var_dmgtime, get_gametime() + time);
 	set_entvar(grenade, var_nextthink, get_gametime() + 0.1);
 	set_member(grenade, m_Grenade_bIsC4, false);
@@ -979,11 +1083,15 @@ throwNade(const id, const item, const Float:vecSrc[3], const Float:vecThrow[3], 
 	if(g_eCvar[CVAR_WATER_TOUCH]){
 		new other = get_member(item, m_pPlayer);
 
-		if(!bCreateWater[other]){
+		if(bCreateWater[other] && !bIsCT) {
+			set_member(grenade, m_Grenade_bJustBlew, true);
+		} else if (!bIsCT) {
 			Molotov_CreateWickFollow(grenade, MOLOTOV_SPRITE_WICK, 250.0, 25.0, 0.125);
-		} else set_member(grenade, m_Grenade_bJustBlew, true);
-	} else { 
-		Molotov_CreateWickFollow(grenade, MOLOTOV_SPRITE_WICK, 250.0, 25.0, 0.125);
+		}
+	} else {
+		if (!bIsCT) {
+			Molotov_CreateWickFollow(grenade, MOLOTOV_SPRITE_WICK, 250.0, 25.0, 0.125);
+		}
 		set_member(grenade, m_Grenade_bJustBlew, false);
 	}
 
@@ -993,10 +1101,10 @@ throwNade(const id, const item, const Float:vecSrc[3], const Float:vecThrow[3], 
 	return grenade;
 }
 
-
 public GrenadeTouch(const grenade, const other) {
 
 	if (is_nullent(grenade)) return;
+	if (get_entvar(grenade, var_flags) & FL_KILLME) return;
 
 	if (FClassnameIs(other, "func_breakable") && get_entvar(other, var_spawnflags) != SF_BREAK_TRIGGER_ONLY)
 		dllfunc(DLLFunc_Use, other, grenade);
@@ -1006,7 +1114,7 @@ public GrenadeTouch(const grenade, const other) {
 	if (!is_nullent(other) && ExecuteHam(Ham_IsPlayer, other))
 	{
 		if (g_eCvar[CVAR_HIT_PLAYER]) {
-			ExecuteHamB(Ham_TakeDamage, other, grenade, owner, g_eCvar[CVAR_HIT_PLAYER], DMG_GRENADE);
+			ExecuteHamB(Ham_TakeDamage, other, grenade, owner, float(g_eCvar[CVAR_HIT_PLAYER]), DMG_GRENADE);
 		}
 
 		set_entvar(grenade, var_dmgtime, 0.0);
@@ -1049,8 +1157,9 @@ public GrenadeTouch(const grenade, const other) {
 			set_entvar(grenade, var_dmgtime, 0.0);
 			set_entvar(grenade, var_nextthink, get_gametime() + 0.01);
 		}
-		else
-			rh_emit_sound2(grenade, 0, CHAN_VOICE, MOLOTOV_SOUND_HIT);
+		else {}
+
+		rh_emit_sound2(grenade, 0, CHAN_VOICE, get_entvar(grenade, var_iuser4) == 1 ? INCENDIARY_SOUND_HIT : MOLOTOV_SOUND_HIT);
 
 		break;
 	}
@@ -1058,6 +1167,7 @@ public GrenadeTouch(const grenade, const other) {
 
 public GrenadeThink(const grenade) {
 	if (is_nullent(grenade)) return;
+	if (get_entvar(grenade, var_flags) & FL_KILLME) return;
 
 	new Float: origin[3];
 	get_entvar(grenade, var_origin, origin);
@@ -1076,13 +1186,25 @@ public GrenadeThink(const grenade) {
 	if (Float: get_entvar(grenade, var_dmgtime) > get_gametime())
 		return;
 
+	new smokeEnt = MaxClients + 1;
+	while ((smokeEnt = rg_find_ent_by_class(smokeEnt, CLASSNAME_SMOKE_TOUCHER)))
+	{
+		new Float:smokeOrg[3];
+		get_entvar(smokeEnt, var_origin, smokeOrg);
+		if (get_distance_f(origin, smokeOrg) <= 110.0)
+		{
+			set_entvar(grenade, var_flags, FL_KILLME);
+			destroyWick(grenade);
+			return;
+		}
+	}
+
 	explodeNade(grenade);
 }
 
-
-
 explodeNade(const grenade) {
 	if (is_nullent(grenade)) return;
+	if (get_entvar(grenade, var_flags) & FL_KILLME) return;
 
 	new Float: flFraction;
 
@@ -1092,6 +1214,9 @@ explodeNade(const grenade) {
 
 	get_entvar(grenade, var_origin, origin);
 	get_entvar(grenade, var_angles, angles);
+
+	new owner = get_entvar(grenade, var_owner);
+	new bool:bIsCT = bool:(get_entvar(grenade, var_iuser4) == 1);
 
 	vecEnd = origin;
 	vecEnd[2] -= 64.0;
@@ -1113,22 +1238,24 @@ explodeNade(const grenade) {
 			new dropnade = rg_create_entity("info_target");
 
 			if (is_nullent(dropnade)) return;
-			
+
 			set_entvar(dropnade, var_classname, GRENADE_CLASSNAME);
-			engfunc(EngFunc_SetModel, dropnade, WEAPON_MODEL_WORLD_MOLOTOV);
+			engfunc(EngFunc_SetModel, dropnade, bIsCT ? WEAPON_MODEL_WORLD_INCENDIARY : WEAPON_MODEL_WORLD_MOLOTOV);
 			set_entvar(dropnade, var_sequence, 0);
 			set_entvar(dropnade, var_movetype, MOVETYPE_TOSS);
-			set_entvar(dropnade, var_solid, SOLID_TRIGGER);
+			set_entvar(dropnade, var_solid, SOLID_NOT);
+			set_entvar(dropnade, var_iuser4, bIsCT ? 1 : 0);
 			set_entvar(dropnade, var_velocity, Float:{ 0.0, 0.0, 0.0 });
 			engfunc(EngFunc_SetOrigin, dropnade, origin);
 			set_entvar(dropnade, var_angles, angles);
+			set_entvar(dropnade, var_nextthink, get_gametime() + 0.3);
 
-			SetTouch(dropnade, "Drop_ItemMolotov_Touch");
+			SetThink(dropnade, "Drop_ItemMolotov_Think");
 
 			destroyNade(grenade);
 
 			return;
-		}			
+		}
 
 		if(get_member(grenade, m_Grenade_bJustBlew))
 		{
@@ -1139,7 +1266,6 @@ explodeNade(const grenade) {
 			return;
 		}
 	}
-	new owner = get_entvar(grenade, var_owner);
 
 	new Float: vecEndPos[3];
 	new Float: vecPlaneNormal[3];
@@ -1149,7 +1275,7 @@ explodeNade(const grenade) {
 
 	UTIL_CreateExplosion(origin, Float: { 0.0, 0.0, 0.0 }, SpriteFireExplode, 10, 20, TE_EXPLFLAG_NOSOUND | TE_EXPLFLAG_NOPARTICLES);
 	rh_emit_sound2(grenade, 0, CHAN_STATIC, MOLOTOV_SOUND_EXPLODE);
-	
+
 	engfunc(EngFunc_VecToAngles, vecPlaneNormal, angles);
 
 	for (new i = 0; i < 3; i++)
@@ -1168,17 +1294,23 @@ explodeNade(const grenade) {
 	set_entvar(EntMolotovRadius, var_iuser2, get_gametime() + g_eCvar[CVAR_DURATION]);
 	set_entvar(EntMolotovRadius, var_fuser1, get_gametime() + 0.3);
 	set_entvar(EntMolotovRadius, var_owner, owner);
+	set_entvar(EntMolotovRadius, var_iuser4, bIsCT ? 1 : 0);
+	set_entvar(EntMolotovRadius, var_fuser2, g_eCvar[CVAR_RADIUS]);
+	set_entvar(EntMolotovRadius, var_fuser3, g_eCvar[CVAR_SPREAD_ENABLE] ? get_gametime() + float(g_eCvar[CVAR_DURATION]) * 0.5 : -1.0);
 	engfunc(EngFunc_SetOrigin, EntMolotovRadius, origin);
-	engfunc(EngFunc_SetSize, EntMolotovRadius, Float:{-100.0, -100.0, -30.0}, Float:{100.0, 100.0, 30.0});
+	new Float:flInitMin[3] = { 0.0, 0.0, 0.0 }, Float:flInitMax[3] = { 0.0, 0.0, 0.0 };
+	flInitMin[0] = flInitMin[1] = -g_eCvar[CVAR_RADIUS]; flInitMin[2] = -30.0;
+	flInitMax[0] = flInitMax[1] =  g_eCvar[CVAR_RADIUS]; flInitMax[2] =  30.0;
+	engfunc(EngFunc_SetSize, EntMolotovRadius, flInitMin, flInitMax);
 
 	set_entvar(EntMolotovRadius, var_nextthink, get_gametime() + MOLOTOV_PLAYTHINK_TIME);
 
 	Molotov_CreateModelFloor(EntMolotovRadius, origin, angles, { 1, 15, 30 }, 1, g_eCvar[CVAR_DURATION]);
-	
+
 	rh_emit_sound2(EntMolotovRadius, 0, CHAN_STATIC, MOLOTOV_SOUND_LOOP, 0.5);
 
 	SetThink(EntMolotovRadius, "ThinkFire");
-	
+
 	if(g_eCvar[CVAR_SMOKE_TOUCH]){
 		SetTouch(EntMolotovRadius, "Molotov_TouchSmoke");
 	}
@@ -1198,26 +1330,58 @@ public ThinkFire(EntMolotovRadius)
 
 	new owner = get_entvar(EntMolotovRadius, var_owner);
 
+	new Float:flRadius = get_entvar(EntMolotovRadius, var_fuser2);
+	new Float:flSpreadTime = get_entvar(EntMolotovRadius, var_fuser3);
+	if (flSpreadTime > 0.0 && flCurTime >= flSpreadTime)
+	{
+		flRadius += g_eCvar[CVAR_SPREAD_RADIUS];
+		set_entvar(EntMolotovRadius, var_fuser2, flRadius);
+		set_entvar(EntMolotovRadius, var_fuser3, -1.0);
+		new Float:flSpMin[3], Float:flSpMax[3];
+		flSpMin[0] = flSpMin[1] = -flRadius; flSpMin[2] = -30.0;
+		flSpMax[0] = flSpMax[1] =  flRadius; flSpMax[2] =  30.0;
+		engfunc(EngFunc_SetSize, EntMolotovRadius, flSpMin, flSpMax);
+	}
+
 	new Float: vecEnd[3];
 	vecEnd = origin;
 	vecEnd[2] += 32.0;
 
 	if (Float: get_entvar(EntMolotovRadius, var_dmgtime) <= flCurTime)
 	{
-		set_entvar(EntMolotovRadius, var_dmgtime, flCurTime + g_eCvar[CVAR_DEMAGE_TIME]);
+		set_entvar(EntMolotovRadius, var_dmgtime, flCurTime + g_eCvar[CVAR_DAMAGE_TIME]);
 		EnableHookChain(HookChain_CBasePlayer_TakeDamage);
-		
-		switch(g_eCvar[CVAR_DEMAGE_RADIUS_MODE]){
-			case 1:{
-				static iVictim = -1;
-				while((iVictim = engfunc(EngFunc_FindEntityInSphere, iVictim, origin,  g_eCvar[CVAR_RADIUS] + 32.0)))
-				{
-					if(!is_user_alive(iVictim))continue;
 
-					ExecuteHamB(Ham_TakeDamage, iVictim, EntMolotovRadius, owner, g_eCvar[CVAR_DEMAGE_VALUE], DMG_GRENADE);
-				}
+		new Float:flDmgRadius = flRadius + 32.0;
+		new Float:victimOrigin[3];
+		new Float:flLosFraction;
+
+		for (new iVictim = 1; iVictim <= MaxClients; iVictim++)
+		{
+			if (!is_user_alive(iVictim)) continue;
+			get_entvar(iVictim, var_origin, victimOrigin);
+
+			new Float:dz = victimOrigin[2] - origin[2];
+			if (dz < -64.0 || dz > 120.0) continue;
+
+			new Float:dx = victimOrigin[0] - origin[0];
+			new Float:dy = victimOrigin[1] - origin[1];
+			new Float:flHorizDist = floatsqroot(dx * dx + dy * dy);
+			if (flHorizDist > flDmgRadius) continue;
+
+			engfunc(EngFunc_TraceLine, origin, victimOrigin, IGNORE_MONSTERS, EntMolotovRadius, 0);
+			get_tr2(0, TR_flFraction, flLosFraction);
+			if (flLosFraction < 1.0) continue;
+
+			if (g_eCvar[CVAR_DAMAGE_RADIUS_MODE] == 2)
+			{
+				new Float:flScale = 1.0 - (flHorizDist / flDmgRadius);
+				ExecuteHamB(Ham_TakeDamage, iVictim, EntMolotovRadius, owner, g_eCvar[CVAR_DAMAGE_VALUE] * flScale, DMG_GRENADE);
 			}
-			case 2: rg_dmg_radius(origin, EntMolotovRadius, owner, g_eCvar[CVAR_DEMAGE_VALUE], g_eCvar[CVAR_RADIUS] + 32.0, 0, DMG_GRENADE);
+			else
+			{
+				ExecuteHamB(Ham_TakeDamage, iVictim, EntMolotovRadius, owner, g_eCvar[CVAR_DAMAGE_VALUE], DMG_GRENADE);
+			}
 		}
 
 		DisableHookChain(HookChain_CBasePlayer_TakeDamage);
@@ -1246,15 +1410,15 @@ public ThinkFire(EntMolotovRadius)
 
 		get_entvar(EntMolotovRadius, var_vuser2, vecPlaneNormal);
 
-		vecAngles[0] = random_float(-(g_eCvar[CVAR_RADIUS] / 4), -(g_eCvar[CVAR_RADIUS] / 6));
+		vecAngles[0] = random_float(-(flRadius / 4.0), -(flRadius / 6.0));
 		vecAngles[1] = random_float(0.0, 360.0);
 		engfunc(EngFunc_MakeVectors, vecAngles);
 		global_get(glb_v_forward, vecViewForward);
 
 		for (new i = 0; i < 3; i++)
 		{
-			vecStart[i] = origin[i] + vecPlaneNormal[i] * (g_eCvar[CVAR_RADIUS] / 4); 
-			vecEnd[i] = vecStart[i] + vecViewForward[i] * (g_eCvar[CVAR_RADIUS] - (g_eCvar[CVAR_RADIUS] / 6));
+			vecStart[i] = origin[i] + vecPlaneNormal[i] * (flRadius / 4.0);
+			vecEnd[i] = vecStart[i] + vecViewForward[i] * (flRadius - (flRadius / 6.0));
 		}
 
 		engfunc(EngFunc_TraceLine, vecStart, vecEnd, IGNORE_MONSTERS, EntMolotovRadius, 0);
@@ -1262,52 +1426,42 @@ public ThinkFire(EntMolotovRadius)
 		get_tr2(0, TR_flFraction, flFraction);
 		get_tr2(0, TR_vecEndPos, vecEnd);
 		get_tr2(0, TR_vecPlaneNormal, vecPlaneNormal);
-		
-	
+
 		if (flFraction >= 1.0 || vecPlaneNormal[2] == -1.0)
 		{
-			Molotov_CreateModelFloor(EntMolotovRadius, vecEnd, vecAngles, { 15, 30, 45 }, random_num(1, 25), random_num(g_eCvar[CVAR_DURATION] / 2, g_eCvar[CVAR_DURATION] - (g_eCvar[CVAR_DURATION] / 3)))
-			set_entvar(EntMolotovRadius, var_iuser3, iFireNum + 1);
+			new Float:dzFloor = vecEnd[2] - origin[2];
+			if (dzFloor >= -64.0 && dzFloor <= 120.0)
+			{
+				Molotov_CreateModelFloor(EntMolotovRadius, vecEnd, vecAngles, { 15, 30, 45 }, random_num(1, 25), g_eCvar[CVAR_DURATION] - random_num(1, 2))
+				set_entvar(EntMolotovRadius, var_iuser3, iFireNum + 1);
 
-			UTIL_WorldDecal(vecEnd);
+				UTIL_WorldDecal(vecEnd);
+			}
 		}
 	}
-	
-	for (new i = 0; i < g_eCvar[CVAR_EFFECT_NUM]; i++){
-		new Float: flFraction;
 
-		new Float: vecStart[3];
-		new Float: vecEnd[3];
-		new Float: vecAngles[3];
-		new Float: vecViewForward[3];
-		new Float: vecPlaneNormal[3];
+	for (new i = 0; i < g_eCvar[CVAR_EFFECT_NUM]; i++)
+	{
+		new Float:flR = floatsqroot(random_float(0.0, 1.0)) * flRadius;
+		new Float:flTheta = random_float(0.0, 6.28318);
 
-		get_entvar(EntMolotovRadius, var_vuser1, vecPlaneNormal);
+		new Float:vecFrom[3], Float:vecTo[3], Float:vecHit[3], Float:flFraction;
+		vecFrom[0] = origin[0] + flR * floatcos(flTheta);
+		vecFrom[1] = origin[1] + flR * floatsin(flTheta);
+		vecFrom[2] = origin[2] + 64.0;
+		vecTo = vecFrom;
+		vecTo[2] = origin[2] - 128.0;
 
-		vecAngles[0] = random_float(-(g_eCvar[CVAR_RADIUS] / 6), -g_eCvar[CVAR_RADIUS]);
-		vecAngles[1] = random_float(0.0, 360.0);
-
-		engfunc(EngFunc_MakeVectors, vecAngles);
-		global_get(glb_v_forward, vecViewForward);
-
-		for (new i = 0; i < 3; i++)
-		{
-			vecStart[i] = origin[i] + vecPlaneNormal[i] * (g_eCvar[CVAR_RADIUS] / 6);
-			vecEnd[i] = vecStart[i] + vecViewForward[i] * g_eCvar[CVAR_RADIUS];
-		}
-		engfunc(EngFunc_TraceLine, vecStart, vecEnd, IGNORE_MONSTERS, EntMolotovRadius, 0);
-
+		engfunc(EngFunc_TraceLine, vecFrom, vecTo, IGNORE_MONSTERS, EntMolotovRadius, 0);
 		get_tr2(0, TR_flFraction, flFraction);
-		get_tr2(0, TR_vecEndPos, vecEnd);
-		get_tr2(0, TR_vecPlaneNormal, vecPlaneNormal);
+		if (flFraction >= 1.0) continue;
 
+		get_tr2(0, TR_vecEndPos, vecHit);
+		new Float:dz = vecHit[2] - origin[2];
+		if (dz < -64.0 || dz > 120.0) continue;
 
-		if (flFraction >= 1.0 || vecPlaneNormal[2] == -1.0)
-		{
-			Molotov_CreateDebris(EntMolotovRadius, vecEnd);
-		}
+		Molotov_CreateDebris(EntMolotovRadius, vecHit);
 	}
-
 
 	new MolotovFire = MaxClients + 1;
 
@@ -1317,7 +1471,7 @@ public ThinkFire(EntMolotovRadius)
 	{
 		set_entvar(EntMolotovRadius, var_nextthink, get_gametime() + MOLOTOV_PLAYTHINK_TIME);
 		SetThink(EntMolotovRadius, "FireRemove");
-		
+
 		rh_emit_sound2(EntMolotovRadius, 0, CHAN_STATIC, MOLOTOV_SOUND_LOOP, 0.0, ATTN_NONE, SND_STOP);
 		rh_emit_sound2(EntMolotovRadius, 0, CHAN_STATIC, MOLOTOV_SOUND_FADEOUT, 0.5);
 
@@ -1354,14 +1508,46 @@ public ThinkFire(EntMolotovRadius)
 					parts[i] = 0;
 			}
 		}
-		
+
 		set_entvar(MolotovFire, var_vuser1, parts);
 		set_entvar(MolotovFire, var_body, CalculateModelBodyArr(parts, sizes, count));
+
+		if (get_entvar(EntMolotovRadius, var_iuser4) == 1 && random_num(0, 7) == 0)
+		{
+			new Float:sparkPos[3];
+			get_entvar(MolotovFire, var_origin, sparkPos);
+			sparkPos[2] += 8.0;
+			message_begin_f(MSG_PVS, SVC_TEMPENTITY, sparkPos, 0);
+			write_byte(TE_SPARKS);
+			write_coord_f(sparkPos[0]);
+			write_coord_f(sparkPos[1]);
+			write_coord_f(sparkPos[2]);
+			message_end();
+		}
+
 	}
-	
+
+	if (random_num(0, 2) == 0)
+	{
+		new Float:dlightPos[3];
+		get_entvar(EntMolotovRadius, var_origin, dlightPos);
+		dlightPos[2] += 30.0;
+		message_begin_f(MSG_PVS, SVC_TEMPENTITY, dlightPos, 0);
+		write_byte(TE_DLIGHT);
+		write_coord_f(dlightPos[0]);
+		write_coord_f(dlightPos[1]);
+		write_coord_f(dlightPos[2]);
+		write_byte(random_num(8, 13));
+		write_byte(220);
+		write_byte(random_num(70, 130));
+		write_byte(0);
+		write_byte(2);
+		write_byte(5);
+		message_end();
+	}
+
 	set_entvar(EntMolotovRadius, var_nextthink, get_gametime() + MOLOTOV_PLAYTHINK_TIME);
 }
-
 
 public FireRemove(EntMolotovRadius)
 {
@@ -1369,6 +1555,7 @@ public FireRemove(EntMolotovRadius)
 		return;
 
 	new MolotovFire = MaxClients + 1, bool:bRemove;
+	new bool:bAnyStillAlive;
 
 	while ((MolotovFire = rg_find_ent_by_class(MolotovFire, MOLOTOV_FIRE_CLASSNAME)))
 	{
@@ -1388,9 +1575,9 @@ public FireRemove(EntMolotovRadius)
 
 		set_entvar(MolotovFire, var_vuser1, parts);
 		set_entvar(MolotovFire, var_body, CalculateModelBodyArr(parts, sizes, count));
-		
+
 		new Float:render = get_entvar(MolotovFire, var_renderamt);
-		
+
 		if (render - 10.0 <= 0)
 		{
 			bRemove = true;
@@ -1401,7 +1588,7 @@ public FireRemove(EntMolotovRadius)
 		{
 			set_entvar(MolotovFire, var_renderamt, render - 10.0);
 		}
-		
+
 		if (bRemove)
 		{
 			if((parts[0] | parts[1] | parts[2]) == 0)
@@ -1409,6 +1596,16 @@ public FireRemove(EntMolotovRadius)
 				set_entvar(MolotovFire, var_flags, FL_KILLME);
 			}
 		}
+
+		if (!(get_entvar(MolotovFire, var_flags) & FL_KILLME))
+			bAnyStillAlive = true;
+	}
+
+	if (!bAnyStillAlive)
+	{
+		SetThink(EntMolotovRadius, "");
+		set_entvar(EntMolotovRadius, var_flags, FL_KILLME);
+		return;
 	}
 
 	set_entvar(EntMolotovRadius, var_nextthink, get_gametime() + MOLOTOV_PLAYTHINK_TIME);
@@ -1416,40 +1613,51 @@ public FireRemove(EntMolotovRadius)
 
 public CBasePlayer_TakeDamage_Pre(victim, inflictor, attacker, Float:flDamage, bitsDamageType)
 {
-	if (!is_user_connected(victim)) {
+	if (!is_user_connected(victim))
 		return HC_SUPERCEDE;
-	}
 
 	if (FClassnameIs(inflictor, MOLOTOV_FIRE_CLASSNAME)) {
-		switch (g_eCvar[CVAR_DEMAGE_MODE]){
+		new bAttackerValid = is_user_connected(attacker);
+
+		switch (g_eCvar[CVAR_DAMAGE_MODE]) {
 			case 0: {
-				if (attacker == victim || get_member(attacker, m_iTeam) == get_member(victim, m_iTeam)){
+				if (attacker == victim || (bAttackerValid && get_member(attacker, m_iTeam) == get_member(victim, m_iTeam))) {
 					SetHookChainReturn(ATYPE_INTEGER, true);
 					return HC_SUPERCEDE;
 				}
-				else return HC_CONTINUE;
-				
 			}
 			case 1: {
-				if (attacker != victim && get_member(attacker, m_iTeam) == get_member(victim, m_iTeam)){
+				if (attacker != victim && bAttackerValid && get_member(attacker, m_iTeam) == get_member(victim, m_iTeam)) {
 					SetHookChainReturn(ATYPE_INTEGER, true);
 					return HC_SUPERCEDE;
 				}
-				else return HC_CONTINUE;
-			}
-			case 2: {
-				return HC_CONTINUE;
 			}
 		}
+
+		new Float:flNow = get_gametime();
+
+		if (flNow - g_flLastFireHit[victim] > g_eCvar[CVAR_DAMAGE_TIME] * 2.5)
+			g_flFireAccum[victim] = 0.0;
+
+		new Float:flRampTime = float(g_eCvar[CVAR_DURATION]) * 0.5;
+		if (flRampTime <= 0.0) flRampTime = 1.0;
+
+		new Float:flMult = 1.0 + (g_flFireAccum[victim] / flRampTime) * (g_eCvar[CVAR_DAMAGE_MAX_MULT] - 1.0);
+		if (flMult > g_eCvar[CVAR_DAMAGE_MAX_MULT]) flMult = g_eCvar[CVAR_DAMAGE_MAX_MULT];
+
+		g_flLastFireHit[victim] = flNow;
+		g_flFireAccum[victim] += g_eCvar[CVAR_DAMAGE_TIME];
+
+		SetHookChainArg(4, ATYPE_FLOAT, flDamage * flMult);
 	}
-	
+
 	return HC_CONTINUE;
 }
 
 public Molotov_TouchSmoke(item, other)
 {
 	if (is_nullent(item) || is_nullent(other)) return;
-	
+
 	new ModelSmoke[64], SmokeOwner[64];
 	get_entvar(other, var_model, ModelSmoke, charsmax(ModelSmoke));
 	get_pcvar_string(g_pCvarSmokeOwner, SmokeOwner, charsmax(SmokeOwner));
@@ -1459,12 +1667,12 @@ public Molotov_TouchSmoke(item, other)
 		set_entvar(other, var_flags, get_entvar(other, var_flags) | FL_ONGROUND);
 		set_entvar(other, var_dmgtime,0.0);
 		dllfunc(DLLFunc_Think,other);
-		
+
 		new Float:origin[3];
-		get_entvar(other, var_origin, origin);		
+		get_entvar(other, var_origin, origin);
 
 		new MolotovFire = MaxClients + 1;
-		
+
 		while((MolotovFire = engfunc(EngFunc_FindEntityInSphere, MolotovFire, origin, g_eCvar[CVAR_RADIUS])))
 		{
 			if(!FClassnameIs(MolotovFire, MOLOTOV_FIRE_CLASSNAME))
@@ -1473,9 +1681,9 @@ public Molotov_TouchSmoke(item, other)
 			destroyEffect(MolotovFire)
 			set_entvar(MolotovFire, var_flags, FL_KILLME);
 		}
-		
+
 		rh_emit_sound2(item, 0, CHAN_STATIC, MOLOTOV_SOUND_EXT);
-		
+
 		destroyNade(item);
 
 		new SmokeRadius = rg_create_entity("info_target");
@@ -1487,12 +1695,21 @@ public Molotov_TouchSmoke(item, other)
 		set_entvar(SmokeRadius, var_classname, CLASSNAME_SMOKE_TOUCHER);
 		set_entvar(SmokeRadius, var_solid, SOLID_TRIGGER);
 		set_entvar(SmokeRadius, var_movetype, MOVETYPE_TOSS);
-		set_entvar(SmokeRadius, var_iuser2, get_gametime() + 20.0);
+		set_entvar(SmokeRadius, var_iuser2, get_gametime() + g_eCvar[CVAR_SMOKE_DURATION]);
 		engfunc(EngFunc_SetOrigin, SmokeRadius, origin);
 		engfunc(EngFunc_SetSize, SmokeRadius, Float:{-100.0, -100.0, -30.0}, Float:{100.0, 100.0, 30.0});
 
 		SetTouch(SmokeRadius, "Molotov_TouchSmokeFire");
+		SetThink(SmokeRadius, "SmokeRadius_Cleanup");
+		set_entvar(SmokeRadius, var_nextthink, get_gametime() + g_eCvar[CVAR_SMOKE_DURATION]);
 	}
+}
+
+public SmokeRadius_Cleanup(entity)
+{
+	if (is_nullent(entity)) return;
+	SetTouch(entity, "");
+	set_entvar(entity, var_flags, FL_KILLME);
 }
 
 public Molotov_TouchSmokeFire(item, other)
@@ -1502,47 +1719,79 @@ public Molotov_TouchSmokeFire(item, other)
 	if(FClassnameIs(other, GRENADE_CLASSNAME))
 	{
 		set_entvar(other, var_flags, FL_KILLME);
-			
+
 		rh_emit_sound2(other, 0, CHAN_STATIC, MOLOTOV_SOUND_EXT);
 		rh_emit_sound2(other, 0, CHAN_STATIC, MOLOTOV_SOUND_LOOP, 0.0, ATTN_NONE, SND_STOP);
-		
+
 		destroyWick(other);
 	}
-	
+
 	new Float:flDuration = get_entvar(item, var_iuser2);
 
 	if (flDuration <= get_gametime())
 	{
 		SetTouch(item, "");
 		set_entvar(item, var_flags, FL_KILLME);
-		//return;
 	}
 }
 
 public CSGrenade_ExplodeSmokeGrenade_Pre(const this)
 {
 	if (is_nullent(this)) return;
-	
+
 	if(g_eCvar[CVAR_SMOKE_TOUCH]){
-	
+
 		new SmokeRadius = rg_create_entity("info_target");
 
 		if (is_nullent(SmokeRadius))
 			return;
-		
+
 		new Float:origin[3];
 		get_entvar(this, var_origin, origin);
-		
+
 		set_entvar(SmokeRadius, var_origin, origin);
 		set_entvar(SmokeRadius, var_classname, CLASSNAME_SMOKE_TOUCHER);
 		set_entvar(SmokeRadius, var_solid, SOLID_TRIGGER);
 		set_entvar(SmokeRadius, var_movetype, MOVETYPE_TOSS);
-		set_entvar(SmokeRadius, var_iuser2, get_gametime() + 20.0);
+		set_entvar(SmokeRadius, var_iuser2, get_gametime() + g_eCvar[CVAR_SMOKE_DURATION]);
 		engfunc(EngFunc_SetOrigin, SmokeRadius, origin);
 		engfunc(EngFunc_SetSize, SmokeRadius, Float:{-100.0, -100.0, -30.0}, Float:{100.0, 100.0, 30.0});
-		
+
 		SetTouch(SmokeRadius, "Molotov_TouchSmokeFire");
+		SetThink(SmokeRadius, "SmokeRadius_Cleanup");
+		set_entvar(SmokeRadius, var_nextthink, get_gametime() + g_eCvar[CVAR_SMOKE_DURATION]);
 	}
+}
+
+public Drop_ItemMolotov_Think(item)
+{
+	if (is_nullent(item)) return;
+	if (get_entvar(item, var_flags) & FL_KILLME) return;
+
+	new Float:itemOrigin[3];
+	get_entvar(item, var_origin, itemOrigin);
+
+	new bitAccess = g_eCvar[CVAR_BUY_ACCESS];
+
+	for (new id = 1; id <= MaxClients; id++)
+	{
+		if (!is_user_alive(id)) continue;
+		if (bitAccess && ~get_user_flags(id) & bitAccess) continue;
+		if (rg_get_player_item(id, ITEM_CLASSNAME, GRENADE_SLOT) != 0) continue;
+
+		new Float:playerOrigin[3];
+		get_entvar(id, var_origin, playerOrigin);
+
+		if (get_distance_f(itemOrigin, playerOrigin) <= 64.0)
+		{
+			giveNade(id, get_entvar(item, var_iuser4));
+			rh_emit_sound2(id, 0, CHAN_ITEM, GUNPICKUP_SOUND);
+			set_entvar(item, var_flags, FL_KILLME);
+			return;
+		}
+	}
+
+	set_entvar(item, var_nextthink, get_gametime() + 0.3);
 }
 
 public Drop_ItemMolotov_Touch(item, other)
@@ -1550,9 +1799,9 @@ public Drop_ItemMolotov_Touch(item, other)
 	if (is_nullent(item) || is_nullent(other)) return;
 
 	if (!ExecuteHam(Ham_IsPlayer, other)) return;
-	
+
 	new bitAccess = g_eCvar[CVAR_BUY_ACCESS];
-	
+
 	if (bitAccess && ~get_user_flags(other) & bitAccess)
 		return;
 
@@ -1568,7 +1817,7 @@ public Drop_ItemMolotov_Touch(item, other)
 destroyNade(const grenade) {
 	SetTouch(grenade, "");
 	SetThink(grenade, "");
-	
+
 	set_entvar(grenade, var_flags, FL_KILLME);
 
 	destroyWick(grenade);
@@ -1581,7 +1830,7 @@ destroyWick(const grenade){
 	{
 		if (get_entvar(item, var_owner) != grenade)
 			continue;
-			
+
 		if (!is_nullent(item))
 			set_entvar(item, var_flags, FL_KILLME);
 	}
@@ -1598,10 +1847,9 @@ destroyEffect(const grenade) {
 		if (!is_nullent(item))
 			set_entvar(item, var_flags, FL_KILLME);
 	}
-	
+
 	rh_emit_sound2(grenade, 0, CHAN_STATIC, MOLOTOV_SOUND_LOOP, 0.0, ATTN_NONE, SND_STOP);
 }
-
 
 stock rg_get_player_item(const id, const classname[], const InventorySlotType:slot = NONE_SLOT) {
 	new item = get_member(id, m_rgpPlayerItems, slot);
@@ -1615,7 +1863,7 @@ stock rg_get_player_item(const id, const classname[], const InventorySlotType:sl
 	return 0;
 }
 
-stock UTIL_WeapoList(
+stock UTIL_WeaponList(
 	const type,
 	const player,
 	const name[],
@@ -1676,7 +1924,6 @@ stock UTIL_CreateBreakModel(const Float: origin[3],const speedNoise, const isMod
 	message_end();
 }
 
-
 stock UTIL_CreateSprite(const Float: origin[3], const isModelIndex, const iScale, const iAlpha)
 {
 	message_begin_f(MSG_BROADCAST, SVC_TEMPENTITY, origin, 0);
@@ -1716,6 +1963,7 @@ stock Molotov_CreateModelFloor(owner, Float: origin[3], Float: angles[3], parts[
 	for (new i = 0; i < 3; i++)
 		origin[i] = vecEndPos[i] + vecPlaneNormal[i];
 
+	angles[1] = random_float(0.0, 360.0);
 	FloorOriginAngles(origin, angles);
 
 	new MolotovFire = rg_create_entity("info_target", false);
@@ -1740,7 +1988,7 @@ stock Molotov_CreateModelFloor(owner, Float: origin[3], Float: angles[3], parts[
 stock Molotov_CreateDebris(owner, Float: origin[3])
 {
 	if (is_nullent(owner)) return;
-	
+
 	new Float: flFraction;
 
 	new Float: vecEndPos[3];
@@ -1756,9 +2004,6 @@ stock Molotov_CreateDebris(owner, Float: origin[3])
 	if (flFraction >= 1.0)
 		return;
 
-	vecAngles[0] = -vecAngles[0] + 180.0;
-	vecAngles[2] = -vecAngles[2] + 180.0;
-
 	get_tr2(0, TR_vecEndPos, vecEndPos);
 	get_tr2(0, TR_vecPlaneNormal, vecPlaneNormal);
 	engfunc(EngFunc_VecToAngles, vecPlaneNormal, vecAngles);
@@ -1766,7 +2011,8 @@ stock Molotov_CreateDebris(owner, Float: origin[3])
 	for (new i = 0; i < 3; i++)
 		origin[i] = vecEndPos[i] + vecPlaneNormal[i];
 
-	UTIL_CreateSprite(origin, SpriteFireGround, random_num(5,6), 255);
+	new iTeam = get_entvar(owner, var_iuser4);
+	UTIL_CreateSprite(origin, iTeam == 1 ? SpriteFireGround_CT : SpriteFireGround, random_num(3, 6), 255);
 }
 
 stock Molotov_CreateMuzzleFlash(item, other, const models[], Float:renderamt, Float:frame, Float:scale, body)
@@ -1909,7 +2155,7 @@ stock UTIL_PrecacheSoundsFromModel(const szModelPath[])
 		}
 	}
 
-	fclose(iFile);
+	if (iFile) fclose(iFile);
 }
 
 stock UTIL_PrecacheSpritesFromTxt(const szWeaponList[])
